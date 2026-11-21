@@ -40,6 +40,12 @@ public sealed class LockEngine
     private IReadOnlyList<EnforcementItemDto> _lastReport = [];
 
     public bool SafeLocked { get; private set; }
+
+    /// <summary>Cheap check for the host (mirrored to the registry for the MSI's uninstall check).</summary>
+    public bool UninstallAllowed => !SafeLocked && (!_state.IsLocked || _state.UninstallAuthorized);
+
+    /// <summary>The filter currently locked in (for reachability probes and trusted-time lookups).</summary>
+    public FilterConfig? CurrentFilter => _state.IsLocked ? _state.Filter : null;
     public string? SafeLockedReason { get; private set; }
 
     public LockEngine(IStateStore store, IEnforcement enforcement, IConnectionTester tester, ChangeTypeRegistry types,
