@@ -24,17 +24,17 @@ public class WindowsIntegrationTests
         var fw = new WfpFirewall(restrictToSystem: false);
         try
         {
-            Assert.True(SendUdpSucceeds(TestNet, 53), "Sending to TEST-NET should work before the rule exists.");
+            Assert.True(ConnectNotRefused(TestNet, 53), "Sending to TEST-NET should work before the rule exists.");
             var rules = new List<FirewallRule> { new("Test block", FilterAction.Block, 10, TestNet) };
             fw.Apply(rules);
             Assert.True(fw.VerifyPresent(rules));
-            Assert.False(SendUdpSucceeds(TestNet, 53), "The WFP block rule should refuse the packet.");
+            Assert.False(ConnectNotRefused(TestNet, 53), "The WFP block rule should refuse the packet.");
         }
         finally
         {
             fw.RemoveAll();
         }
-        Assert.True(SendUdpSucceeds(TestNet, 53), "After RemoveAll, traffic should flow again.");
+        Assert.True(ConnectNotRefused(TestNet, 53), "After RemoveAll, traffic should flow again.");
     }
 
     [WindowsAdminFact]
@@ -81,10 +81,19 @@ public class WindowsIntegrationTests
         Assert.Null(after?.GetValue("DnsOverHttpsMode"));
     }
 
-    private static bool SendUdpSucceeds(IPAddress ip, int port)
+    /// <summary>
+    /// True unless WFP refuses the connection. TEST-NET is unroutable, so an allowed connect just times out,
+    /// while a WFP block fails at once with "access denied" (WSAEACCES).
+    /// </summary>
+    private static bool ConnectNotRefused(IPAddress ip, int port)
     {
-        using var s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        try { s.SendTo([0, 1, 2, 3], new IPEndPoint(ip, port)); return true; }
-        catch (SocketException ex) when (ex.SocketErrorCode is SocketError.AccessDenied) { return false; }
+        using var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        try
+        {
+            s.ConnectAsync(new IPEndPoint(ip, port)).Wait(TimeSpan.FromSeconds(2));
+            return true;
+        }
+        catch (AggregateException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.AccessDenied }) { return false; }
+        catch (AggregateException) { return true; }
     }
 }
