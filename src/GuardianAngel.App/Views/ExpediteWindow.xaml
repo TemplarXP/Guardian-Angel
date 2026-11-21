@@ -1,0 +1,16 @@
+<Window x:Class="GuardianAngel.App.Views.ExpediteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Partner code" Width="440" Height="300" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{StaticResource Background}" FontFamily="Segoe UI">
+  <StackPanel Margin="24">
+    <TextBlock Text="Ask your partner for the 6-digit code from their authenticator app." />
+    <TextBox x:Name="CodeBox" MaxLength="6" FontSize="22" Width="160" HorizontalAlignment="Left" Margin="0,12"/>
+    <StackPanel Orientation="Horizontal">
+      <Button x:Name="ApplyButton" Content="Apply now" Style="{StaticResource Primary}" Click="Apply_Click" IsDefault="True"/>
+      <Button Content="Close" Click="Close_Click"/>
+    </StackPanel>
+    <TextBlock x:Name="ResultText" Margin="0,12,0,0"/>
+    <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,12,0,0" Text="Five wrong codes pause codes for one hour."/>
+  </StackPanel>
+</Window>

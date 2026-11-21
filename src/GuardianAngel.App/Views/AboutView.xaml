@@ -1,0 +1,26 @@
+<UserControl x:Class="GuardianAngel.App.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <StackPanel Margin="32" MaxWidth="640" HorizontalAlignment="Left">
+    <TextBlock Text="About Guardian Angel" Style="{StaticResource H1}"/>
+    <TextBlock x:Name="VersionText" Style="{StaticResource Muted}"/>
+    <TextBlock Margin="0,16,0,0">
+      Guardian Angel is free and open-source software, made as an act of service, for the sake of God.
+      There are no ads, no accounts and no data collection. Everything runs on this PC.
+    </TextBlock>
+    <TextBlock Margin="0,12,0,0">
+      There is no master key, backdoor or hidden bypass in release versions. The code is public, so anyone can check.
+    </TextBlock>
+    <TextBlock Margin="0,12,0,0">
+      License: GNU General Public License v3.0 or later.
+    </TextBlock>
+    <TextBlock Margin="0,12,0,0">
+      <Hyperlink NavigateUri="https://github.com/TemplarXP/Guardian-Angel" RequestNavigate="Link_RequestNavigate">Source code and bug reports</Hyperlink>
+    </TextBlock>
+    <TextBlock Margin="0,24,0,0" Style="{StaticResource Muted}" FontSize="12">
+      If Guardian Angel helps you and you'd like to support it:
+      <Hyperlink NavigateUri="https://github.com/sponsors/TemplarXP" RequestNavigate="Link_RequestNavigate">donate</Hyperlink>.
+      Sharing it with someone who needs it helps just as much.
+    </TextBlock>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,19 @@
+<Window x:Class="GuardianAngel.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Guardian Angel" Width="1040" Height="760" MinWidth="820" MinHeight="600"
+        Background="{StaticResource Background}" WindowStartupLocation="CenterScreen" FontFamily="Segoe UI">
+  <DockPanel>
+    <Border DockPanel.Dock="Left" Width="200" Background="White" BorderBrush="{StaticResource Border}" BorderThickness="0,0,1,0" Padding="12">
+      <StackPanel>
+        <TextBlock Text="Guardian Angel" FontSize="18" FontWeight="SemiBold" Margin="8,4,0,16"/>
+        <Button x:Name="NavHome" Content="Home" Style="{StaticResource Nav}" Click="NavHome_Click"/>
+        <Button x:Name="NavLearn" Content="Learn" Style="{StaticResource Nav}" Click="NavLearn_Click"/>
+        <Button x:Name="NavAbout" Content="About" Style="{StaticResource Nav}" Click="NavAbout_Click"/>
+        <TextBlock x:Name="DebugBanner" Visibility="Collapsed" Margin="8,24,0,0" Foreground="{StaticResource Bad}" FontWeight="SemiBold"
+                   Text="DEBUG BUILD: for testing in a virtual machine only."/>
+      </StackPanel>
+    </Border>
+    <ContentControl x:Name="Body" Margin="0"/>
+  </DockPanel>
+</Window>

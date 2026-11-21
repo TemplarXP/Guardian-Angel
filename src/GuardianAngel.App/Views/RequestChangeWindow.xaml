@@ -1,0 +1,60 @@
+<Window x:Class="GuardianAngel.App.Views.RequestChangeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:GuardianAngel.App.Views"
+        Title="Request a change" Width="720" Height="720" WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Background}" FontFamily="Segoe UI">
+  <DockPanel Margin="24">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,12,0,0">
+      <Button x:Name="BackButton" Content="Back" Click="Back_Click" Visibility="Collapsed"/>
+      <Button x:Name="NextButton" Content="Next" Style="{StaticResource Primary}" Click="Next_Click"/>
+      <Button Content="Close" Click="Close_Click"/>
+      <TextBlock x:Name="ErrorText" Foreground="{StaticResource Bad}" VerticalAlignment="Center" Margin="8,0,0,0" MaxWidth="400"/>
+    </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <Grid>
+        <StackPanel x:Name="ChoosePanel">
+          <TextBlock Text="What would you like to change?" Style="{StaticResource H2}" Margin="0,0,0,8"/>
+          <RadioButton x:Name="KindDelay" GroupName="Kind" Content="Change the delay (longer is instant)" IsChecked="True" Checked="Kind_Checked"/>
+          <RadioButton x:Name="KindFilter" GroupName="Kind" Content="Change the filter" Checked="Kind_Checked"/>
+          <RadioButton x:Name="KindPartner" GroupName="Kind" Content="Remove my accountability partner" Checked="Kind_Checked"/>
+          <RadioButton x:Name="KindUninstall" GroupName="Kind" Content="Uninstall Guardian Angel" Checked="Kind_Checked"/>
+
+          <Border x:Name="DelayParams" Style="{StaticResource Card}" Margin="0,12,0,0">
+            <StackPanel>
+              <CheckBox x:Name="NewDelayEnabled" Content="Use a time delay" IsChecked="True"/>
+              <v:DelayPicker x:Name="NewDelay"/>
+              <TextBlock x:Name="DelayHint" Style="{StaticResource Muted}" FontSize="12"/>
+            </StackPanel>
+          </Border>
+          <Border x:Name="FilterParams" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="Collapsed">
+            <StackPanel>
+              <v:FilterEditor x:Name="NewFilter"/>
+              <TextBlock Style="{StaticResource Muted}" FontSize="12" Text="The new filter is tested when the delay ends. If it doesn't answer, your current filter stays."/>
+            </StackPanel>
+          </Border>
+          <Border x:Name="UninstallParams" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource Muted}" Text="When the delay ends, Guardian Angel puts your DNS back to automatic, removes its firewall rules and browser policies, then uninstalls itself."/>
+          </Border>
+        </StackPanel>
+
+        <StackPanel x:Name="ReflectPanel" Visibility="Collapsed">
+          <TextBlock Text="Before you continue" Style="{StaticResource H2}" Margin="0,0,0,8"/>
+          <Border Style="{StaticResource Card}" Background="#FFFBEB" BorderBrush="#F6E05E">
+            <TextBlock x:Name="ReflectionText" FontSize="16" LineHeight="24"/>
+          </Border>
+          <TextBlock x:Name="ChangeText" FontWeight="SemiBold"/>
+          <TextBlock x:Name="DelayText" Style="{StaticResource Muted}" Margin="0,4,0,12"/>
+          <TextBlock Text="If you still want this, type the sentence below exactly:"/>
+          <TextBlock x:Name="PhraseText" FontWeight="SemiBold" Margin="0,4,0,0"/>
+          <TextBox x:Name="PhraseBox"/>
+        </StackPanel>
+
+        <StackPanel x:Name="DonePanel" Visibility="Collapsed">
+          <TextBlock x:Name="DoneTitle" Style="{StaticResource H2}"/>
+          <TextBlock x:Name="DoneText" Style="{StaticResource Muted}"/>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

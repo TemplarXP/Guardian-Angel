@@ -1,0 +1,38 @@
+<UserControl x:Class="GuardianAngel.App.Views.FilterEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <StackPanel>
+    <TextBlock Text="Choose a filter" FontWeight="SemiBold"/>
+    <TextBlock Style="{StaticResource Muted}" FontSize="12" Text="These are examples only. Guardian Angel isn't connected to any of them. You can also enter your own."/>
+    <ComboBox x:Name="PresetBox" DisplayMemberPath="Name" SelectionChanged="PresetBox_SelectionChanged"/>
+    <TextBlock x:Name="PresetDescription" Style="{StaticResource Muted}" Margin="0,0,0,8"/>
+
+    <StackPanel x:Name="ProfilePanel" Visibility="Collapsed">
+      <TextBlock Text="Your profile ID (from your filter's dashboard)"/>
+      <TextBox x:Name="ProfileBox" TextChanged="ProfileBox_TextChanged"/>
+    </StackPanel>
+
+    <TextBlock Text="Name"/>
+    <TextBox x:Name="NameBox"/>
+    <TextBlock Text="DNS server addresses (first one is the main server, the rest are fallbacks). One per line."/>
+    <TextBox x:Name="ServersBox" AcceptsReturn="True" Height="84" VerticalScrollBarVisibility="Auto"/>
+
+    <TextBlock Text="Encryption" FontWeight="SemiBold" Margin="0,8,0,0"/>
+    <RadioButton x:Name="EncDoh" GroupName="Enc" Content="Encrypted DNS over HTTPS (recommended)" Checked="Enc_Checked"/>
+    <RadioButton x:Name="EncDot" GroupName="Enc" Content="Encrypted DNS over TLS (only on newer Windows 11 builds)" Checked="Enc_Checked"/>
+    <RadioButton x:Name="EncNone" GroupName="Enc" Content="Plain DNS (works everywhere, but a device on your network could intercept it)" Checked="Enc_Checked"/>
+    <StackPanel x:Name="DohPanel">
+      <TextBlock Text="DoH template address"/>
+      <TextBox x:Name="DohBox"/>
+    </StackPanel>
+    <StackPanel x:Name="DotPanel" Visibility="Collapsed">
+      <TextBlock Text="DoT host name"/>
+      <TextBox x:Name="DotBox"/>
+    </StackPanel>
+
+    <TextBlock Text="If no filter can be reached" FontWeight="SemiBold" Margin="0,8,0,0"/>
+    <RadioButton x:Name="UnreachBlock" GroupName="Unreach" Content="Block the internet until a filter answers (safest)" IsChecked="True"/>
+    <RadioButton x:Name="UnreachFallback" GroupName="Unreach" Content="Use only the locked fallback servers (DNS stops working, other traffic continues)"/>
+    <TextBlock Style="{StaticResource Muted}" FontSize="12" Text="Guardian Angel never falls back to an unfiltered server."/>
+  </StackPanel>
+</UserControl>
