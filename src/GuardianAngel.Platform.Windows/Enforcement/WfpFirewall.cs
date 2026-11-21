@@ -21,7 +21,7 @@ namespace GuardianAngel.Platform.Windows.Enforcement;
 /// Filter keys are deterministic (derived from the rule index), so the set can always be found and replaced
 /// atomically inside one WFP transaction.
 /// </summary>
-public sealed class WfpFirewall
+public sealed class WfpFirewall(bool restrictToSystem = true)
 {
     public static readonly Guid ProviderKey = new("6f0c3c5e-6a2b-4d7e-9a51-0e7c1a5b9f10");
     public static readonly Guid SubLayerKey = new("6f0c3c5e-6a2b-4d7e-9a51-0e7c1a5b9f11");
@@ -30,7 +30,13 @@ public sealed class WfpFirewall
     public const int MaxRules = 1024;
 
     /// <summary>Only SYSTEM may change our objects; Administrators may read them.</summary>
-    private const string ObjectSddl = "D:P(A;;GA;;;SY)(A;;GR;;;BA)";
+    private const string SystemOnlySddl = "D:P(A;;GA;;;SY)(A;;GR;;;BA)";
+
+    /// <summary>
+    /// The service (SYSTEM) restricts our WFP objects so Administrators can't delete them through the WFP API.
+    /// Integration tests run as Administrator and use Windows' default descriptor instead.
+    /// </summary>
+    private string? ObjectSddl => restrictToSystem ? SystemOnlySddl : null;
 
     private string? _appliedSignature;
     public int AppliedCount { get; private set; }
@@ -48,14 +54,14 @@ public sealed class WfpFirewall
         using var engine = WfpEngine.Open();
         engine.InTransaction(() =>
         {
-            EnsureProviderAndSublayer(engine);
+            EnsureProviderAndSublayer(engine, ObjectSddl);
             DeleteOurFilters(engine);
             var index = 0;
             foreach (var rule in rules)
                 foreach (var layer in LayersFor(rule))
                 {
-                    AddFilter(engine, rule, layer, index, bootTime: false);
-                    AddFilter(engine, rule, layer, index, bootTime: true);
+                    AddFilter(engine, rule, layer, index, bootTime: false, ObjectSddl);
+                    AddFilter(engine, rule, layer, index, bootTime: true, ObjectSddl);
                     index++;
                 }
             AppliedCount = index;
@@ -116,11 +122,11 @@ public sealed class WfpFirewall
             }
     }
 
-    private static void EnsureProviderAndSublayer(WfpEngine engine)
+    private static void EnsureProviderAndSublayer(WfpEngine engine, string? sddl)
     {
         using var name = new NativeString("Guardian Angel");
         using var desc = new NativeString("Locks DNS to the filter you chose. Removed only by a due uninstall.");
-        using var sd = SecurityDescriptorHandle.FromSddl(ObjectSddl);
+        using var sd = SecurityDescriptorHandle.FromSddl(sddl);
 
         var provider = new FWPM_PROVIDER0
         {
@@ -147,7 +153,7 @@ public sealed class WfpFirewall
         finally { Marshal.FreeHGlobal(providerKeyPtr); }
     }
 
-    private static void AddFilter(WfpEngine engine, FirewallRule rule, Guid layer, int index, bool bootTime)
+    private static void AddFilter(WfpEngine engine, FirewallRule rule, Guid layer, int index, bool bootTime, string? sddl)
     {
         using var mem = new NativeArena();
         var conditions = new List<FWPM_FILTER_CONDITION0>();
@@ -205,7 +211,7 @@ public sealed class WfpFirewall
             action = new FWPM_ACTION0 { type = block ? FWP_ACTION_BLOCK : FWP_ACTION_PERMIT },
         };
 
-        using var sd = SecurityDescriptorHandle.FromSddl(ObjectSddl);
+        using var sd = SecurityDescriptorHandle.FromSddl(sddl);
         var rc = WfpApi.FwpmFilterAdd0(engine.Handle, ref filter, bootTime ? IntPtr.Zero : sd.Ptr, out _);
         if (rc != 0 && bootTime)
         {
@@ -274,8 +280,9 @@ public sealed class SecurityDescriptorHandle : IDisposable
 {
     public IntPtr Ptr { get; private init; }
 
-    public static SecurityDescriptorHandle FromSddl(string sddl)
+    public static SecurityDescriptorHandle FromSddl(string? sddl)
     {
+        if (sddl is null) return new SecurityDescriptorHandle { Ptr = IntPtr.Zero }; // Windows' default descriptor
         if (!SecurityApi.ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl, 1, out var sd, out _))
             throw new System.ComponentModel.Win32Exception();
         return new SecurityDescriptorHandle { Ptr = sd };

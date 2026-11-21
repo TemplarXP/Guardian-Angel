@@ -21,7 +21,7 @@ public class WindowsIntegrationTests
     [WindowsAdminFact]
     public void Wfp_block_rule_blocks_and_removal_unblocks()
     {
-        var fw = new WfpFirewall();
+        var fw = new WfpFirewall(restrictToSystem: false);
         try
         {
             Assert.True(SendUdpSucceeds(TestNet, 53), "Sending to TEST-NET should work before the rule exists.");
@@ -40,12 +40,12 @@ public class WindowsIntegrationTests
     [WindowsAdminFact]
     public void Wfp_rules_survive_a_new_engine_session()
     {
-        var fw = new WfpFirewall();
+        var fw = new WfpFirewall(restrictToSystem: false);
         try
         {
             var rules = new List<FirewallRule> { new("Test block", FilterAction.Block, 10, TestNet, [Ports.Dns]) };
             fw.Apply(rules);
-            Assert.True(new WfpFirewall().VerifyPresent(rules), "Persistent filters must exist independently of the process that added them.");
+            Assert.True(new WfpFirewall(restrictToSystem: false).VerifyPresent(rules), "Persistent filters must exist independently of the process that added them.");
         }
         finally { fw.RemoveAll(); }
     }
