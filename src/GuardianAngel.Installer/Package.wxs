@@ -74,7 +74,7 @@
       <Component Id="AppExe">
         <File Id="AppExeFile" Source="$(var.PublishDir)GuardianAngel.App.exe" KeyPath="yes">
           <Shortcut Id="AppShortcut" Directory="ProgramMenuFolder" Name="Guardian Angel" Description="Guardian Angel"
-                    WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="AppIcon" />
+                    WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="AppIcon.exe" />
         </File>
       </Component>
 
@@ -94,7 +94,7 @@
     </ComponentGroup>
 
     <StandardDirectory Id="ProgramMenuFolder" />
-    <Icon Id="AppIcon" SourceFile="$(var.PublishDir)GuardianAngel.App.exe" />
+    <Icon Id="AppIcon.exe" SourceFile="$(var.PublishDir)GuardianAngel.App.exe" />
 
     <Feature Id="Main" Title="Guardian Angel" Level="1">
       <ComponentGroupRef Id="ProgramFiles" />
