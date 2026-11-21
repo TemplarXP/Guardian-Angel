@@ -21,27 +21,47 @@ public sealed class DnsEnforcer
 
     private string? _registeredEncryptionFor;
 
+    private readonly Dictionary<string, string> _configured = new();
+
     public EnforcementItemDto Apply(FilterConfig filter, IReadOnlyList<string> extraServers)
     {
         var problems = new List<string>();
         var v4 = filter.V4.Select(a => a.ToString()).ToList();
         var v6 = filter.V6.Select(a => a.ToString()).ToList();
+        var signature = string.Join(",", filter.Servers);
+        var drifted = DriftedAdapterIds(filter, extraServers);
+        var changed = false;
 
+        // Only touch adapters that are new, were configured for another filter, or drifted. This avoids
+        // re-writing settings and flushing the DNS cache every 10 seconds.
         foreach (var nic in Adapters())
         {
-            var ok = SetForAdapter(nic, v4, ipv6: false) & SetForAdapter(nic, v6, ipv6: true);
-            if (!ok && nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
+            if (_configured.TryGetValue(nic.Id, out var sig) && sig == signature && !drifted.Contains(nic.Id)) continue;
+            changed = true;
+            var up = nic.OperationalStatus == OperationalStatus.Up;
+            var ok = SetForAdapter(nic, v4, ipv6: false, allowFallback: up) & SetForAdapter(nic, v6, ipv6: true, allowFallback: up);
+            if (ok || !up) _configured[nic.Id] = signature;
+            if (!ok && up && nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
                 problems.Add($"{nic.Name}: couldn't set DNS");
         }
 
         problems.AddRange(ApplyEncryption(filter));
-        IpHelperApi.DnsFlushResolverCache();
+        if (changed) IpHelperApi.DnsFlushResolverCache();
 
-        var drift = Verify(filter, extraServers);
-        problems.AddRange(drift);
+        problems.AddRange(Verify(filter, extraServers));
         return new EnforcementItemDto("DNS lock", problems.Count == 0,
             problems.Count == 0 ? $"All adapters use {filter.Name}." : string.Join("; ", problems));
     }
+
+    private HashSet<string> DriftedAdapterIds(FilterConfig filter, IReadOnlyList<string> extraServers)
+    {
+        var allowed = filter.ParsedServers().Concat(extraServers.Select(IPAddress.Parse)).ToHashSet();
+        return Adapters().Where(n => n.OperationalStatus == OperationalStatus.Up
+                && n.GetIPProperties().DnsAddresses.Any(a => !IsPlaceholder(a) && !allowed.Contains(StripScope(a))))
+            .Select(n => n.Id).ToHashSet();
+    }
+
+    private static bool IsPlaceholder(IPAddress a) => a.IsIPv6SiteLocal && a.ScopeId != 0;
 
     /// <summary>Returns adapters whose effective DNS servers include anything other than the locked filter.</summary>
     public List<string> Verify(FilterConfig filter, IReadOnlyList<string> extraServers)
@@ -51,7 +71,7 @@ public sealed class DnsEnforcer
         foreach (var nic in Adapters().Where(n => n.OperationalStatus == OperationalStatus.Up))
         {
             var foreign = nic.GetIPProperties().DnsAddresses
-                .Where(a => !a.IsIPv6SiteLocal || a.ScopeId == 0) // ignore fec0::/10 placeholders Windows shows on some adapters
+                .Where(a => !IsPlaceholder(a)) // ignore fec0::/10 placeholders Windows shows on some adapters
                 .Where(a => !allowed.Contains(StripScope(a)))
                 .ToList();
             if (foreign.Count > 0) drift.Add($"{nic.Name} still lists {string.Join(", ", foreign)}");
@@ -63,19 +83,20 @@ public sealed class DnsEnforcer
     {
         foreach (var nic in Adapters())
         {
-            SetForAdapter(nic, [], ipv6: false);
-            SetForAdapter(nic, [], ipv6: true);
+            SetForAdapter(nic, [], ipv6: false, allowFallback: true);
+            SetForAdapter(nic, [], ipv6: true, allowFallback: true);
         }
         using var policy = Registry.LocalMachine.OpenSubKey(DnsClientPolicyKey, writable: true);
         policy?.DeleteValue("DoHPolicy", throwOnMissingValue: false);
         IpHelperApi.DnsFlushResolverCache();
         _registeredEncryptionFor = null;
+        _configured.Clear();
     }
 
     private static IEnumerable<NetworkInterface> Adapters() =>
         NetworkInterface.GetAllNetworkInterfaces().Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback);
 
-    private static bool SetForAdapter(NetworkInterface nic, List<string> servers, bool ipv6)
+    private static bool SetForAdapter(NetworkInterface nic, List<string> servers, bool ipv6, bool allowFallback)
     {
         if (!Guid.TryParse(nic.Id, out var guid)) return false;
         var list = Marshal(servers);
@@ -92,6 +113,7 @@ public sealed class DnsEnforcer
         finally { System.Runtime.InteropServices.Marshal.FreeHGlobal(list); }
 
         // Fallback for adapters the API refuses: netsh, which every Windows edition has.
+        if (!allowFallback) return false;
         var fam = ipv6 ? "ipv6" : "ipv4";
         if (servers.Count == 0)
             return ProcessRunner.Run("netsh.exe", $"interface {fam} set dnsservers name=\"{nic.Name}\" source=dhcp").ExitCode == 0;
