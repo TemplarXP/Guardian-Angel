@@ -1,6 +1,6 @@
 # Guardian Angel for Windows 11: Technical Plan
 
-Status: **draft for review.** Nothing here is built yet. Items marked **[verify in VM]** are behaviours I'm fairly but not fully sure of, and they get tested before we rely on them.
+Status: **Milestone 1 built** (see "Decisions made during Milestone 1" at the end). Items marked **[verify in VM]** are behaviours I'm fairly but not fully sure of, and they get tested before we rely on them.
 
 ---
 
@@ -257,3 +257,15 @@ Plain DNS (port 53) is **not authenticated**. Any device between you and the fil
 - **Microsoft Azure Artifact (Trusted) Signing:** about US$10/month. Eligibility for individuals is limited to some countries, so check current terms.
 - Regular OV certificates from commercial CAs cost hundreds per year and need an HSM token. (EV certificates no longer give instant SmartScreen reputation.)
 - **Separately from Authenticode:** updates and block lists are signed with **your own Ed25519 key**. The public key is built into the app, and the private key stays offline. Guardian Angel installs or loads only files signed with that key, whatever Authenticode certificate you end up with.
+
+---
+
+## 9. Decisions made during Milestone 1
+- **Instant changes:** only a longer delay, plus cancelling a pending change. Everything else waits out the delay (owner's decision).
+- **Defaults chosen:** .NET 10 LTS, WPF, WiX v5, GPL-3.0-or-later, encrypted DNS by default, delays of 1 hour to 30 days (1 minute in Debug builds), a fixed confirmation sentence, English only.
+- **Time while off** counts only when verified by two TLS-authenticated HTTPS `Date` headers (the earlier of the two is used), and only for changes requested before the PC was switched off.
+- **ECDSA P-256** instead of Ed25519 for list/update signatures, because it's built into .NET, so there's no extra crypto dependency.
+- **Hand-written P/Invoke** instead of CsWin32, with struct layouts asserted by tests.
+- **The watchdog checks through the Service Control Manager** every 3 seconds (exists, configured, running, files intact) instead of a pipe heartbeat. That's simpler, and it can't be fooled by a fake pipe.
+- **The uninstall gate is the app itself** (`GuardianAngel.App.exe --uninstall`), not a separate exe.
+- **Boot-time WFP filters** go in the default sublayer without a provider (BFE objects don't exist at boot). **[verify in VM]**

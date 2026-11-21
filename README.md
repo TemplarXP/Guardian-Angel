@@ -103,4 +103,8 @@ Guardian Angel is free and always will be. If it helps you and you'd like to sup
 
 ## License
 
-To be decided (likely GPL-3.0, so it stays free and open for everyone).
+[GPL-3.0-or-later](LICENSE), so Guardian Angel and every version of it stays free and open for everyone.
+
+## For developers
+
+See [CLAUDE.md](CLAUDE.md) for the architecture and design rules, [docs/PROTECTIONS.md](docs/PROTECTIONS.md) for every protection and how it's tested, and [docs/VM-TESTING.md](docs/VM-TESTING.md) for building and testing in a virtual machine.
