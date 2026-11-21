@@ -72,7 +72,10 @@
       </Component>
 
       <Component Id="AppExe">
-        <File Id="AppExeFile" Source="$(var.PublishDir)GuardianAngel.App.exe" KeyPath="yes" />
+        <File Id="AppExeFile" Source="$(var.PublishDir)GuardianAngel.App.exe" KeyPath="yes">
+          <Shortcut Id="AppShortcut" Directory="ProgramMenuFolder" Name="Guardian Angel" Description="Guardian Angel"
+                    WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="AppIcon" />
+        </File>
       </Component>
 
       <Component Id="ArpEntry">
@@ -90,16 +93,11 @@
       </Component>
     </ComponentGroup>
 
-    <StandardDirectory Id="ProgramMenuFolder">
-      <Component Id="StartMenuShortcut">
-        <Shortcut Id="AppShortcut" Name="Guardian Angel" Description="Guardian Angel" Target="[INSTALLFOLDER]GuardianAngel.App.exe" WorkingDirectory="INSTALLFOLDER" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\GuardianAngel\Installer" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
-      </Component>
-    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <Icon Id="AppIcon" SourceFile="$(var.PublishDir)GuardianAngel.App.exe" />
 
     <Feature Id="Main" Title="Guardian Angel" Level="1">
       <ComponentGroupRef Id="ProgramFiles" />
-      <ComponentRef Id="StartMenuShortcut" />
     </Feature>
   </Package>
 </Wix>
