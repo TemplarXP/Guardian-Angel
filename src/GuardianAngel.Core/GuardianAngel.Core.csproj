@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pure logic. No Windows APIs here, so everything in this project is unit-tested on any OS. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>GuardianAngel.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="GuardianAngel.Core.Tests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Version>0.1.0</Version>
+    <Company>Guardian Angel Project</Company>
+    <Product>Guardian Angel</Product>
+    <Copyright>Copyright (C) 2026 Guardian Angel contributors. GPL-3.0-or-later.</Copyright>
+  </PropertyGroup>
+
+  <!--
+    DEVELOPMENT SAFETY: the debug bypass exists ONLY in Debug builds.
+    Release builds must never define GA_DEBUG_BYPASS. CI fails if the bypass marker
+    string appears in any Release binary (see scripts/Check-NoBypass.ps1).
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>$(DefineConstants);GA_DEBUG_BYPASS</DefineConstants>
+  </PropertyGroup>
+  <Target Name="ForbidBypassInRelease" BeforeTargets="CoreCompile"
+          Condition="'$(Configuration)' == 'Release' And $(DefineConstants.Contains('GA_DEBUG_BYPASS'))">
+    <Error Text="GA_DEBUG_BYPASS must never be defined in Release builds." />
+  </Target>
+</Project>
