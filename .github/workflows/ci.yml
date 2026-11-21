@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core-tests:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Unit tests (Debug)
+        run: dotnet test tests/GuardianAngel.Core.Tests -c Debug
+      - name: Unit tests (Release)
+        run: dotnet test tests/GuardianAngel.Core.Tests -c Release
+
+  windows:
+    name: Windows build, integration tests and installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build solution (Release)
+        run: dotnet build GuardianAngel.sln -c Release
+      - name: Unit + Windows integration tests (runner is Administrator; tests only touch TEST-NET addresses)
+        run: dotnet test GuardianAngel.sln -c Release --no-build
+      - name: Build Release installer (also checks there is no debug bypass)
+        shell: pwsh
+        run: ./scripts/build.ps1 -Configuration Release
+      - name: Build Debug installer for VM testing
+        shell: pwsh
+        run: |
+          Remove-Item artifacts/msi -Recurse -Force -ErrorAction SilentlyContinue
+          ./scripts/build.ps1 -Configuration Debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers
+          path: artifacts/*.msi

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ATTACK TESTS: they try known bypasses against an INSTALLED and LOCKED Guardian Angel, and every bypass must fail.
+    They run ONLY inside a test VM (GA_TEST_VM=1). Never run them on a computer you rely on.
+    Run with: scripts\Invoke-VMTests.ps1
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <ProjectReference Include="..\..\src\GuardianAngel.Core\GuardianAngel.Core.csproj" />
+  </ItemGroup>
+</Project>

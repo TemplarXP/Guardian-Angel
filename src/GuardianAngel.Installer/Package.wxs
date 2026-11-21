@@ -1,0 +1,105 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- NEVER change the UpgradeCode: it must match MsiUninstaller.UpgradeCode, and updates depend on it. -->
+  <Package Name="Guardian Angel"
+           Manufacturer="Guardian Angel Project"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="4B0C2E8A-7D3F-4F6B-9C21-5E8A1D3B7C90"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <!-- Updates replace the program files only. The lock state lives in ProgramData, which the installer never
+         touches, so an update can never open or reset the lock or clear pending changes. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Guardian Angel is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="WINDOWSBUILD">
+      <RegistrySearch Id="BuildSearch" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber" Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR WINDOWSBUILD &gt;= 22000" Message="Guardian Angel needs Windows 11." />
+
+    <!-- Written by the service: 1 = uninstall allowed (not locked, or an uninstall change is due), 0 = locked. -->
+    <Property Id="UNINSTALLAUTHORIZED">
+      <RegistrySearch Id="UninstallSearch" Root="HKLM" Key="SOFTWARE\GuardianAngel" Name="UninstallAuthorized" Type="raw" Bitness="always64" />
+    </Property>
+    <CustomAction Id="BlockLockedUninstall"
+                  Error="Guardian Angel is locked. Uninstalling is a queued change: open Guardian Angel, choose Request change, then Uninstall. When the delay ends, Guardian Angel removes itself." />
+    <InstallExecuteSequence>
+      <Custom Action="BlockLockedUninstall" Before="InstallInitialize"
+              Condition='REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE AND UNINSTALLAUTHORIZED = "#0"' />
+    </InstallExecuteSequence>
+    <InstallUISequence>
+      <Custom Action="BlockLockedUninstall" Before="ExecuteAction"
+              Condition='REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE AND UNINSTALLAUTHORIZED = "#0"' />
+    </InstallUISequence>
+
+    <!-- Hide the plain MSI entry; Settings > Apps shows our own entry, whose Uninstall goes through the gate. -->
+    <Property Id="ARPSYSTEMCOMPONENT" Value="1" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Guardian Angel" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProgramFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PublishDir)**">
+        <Exclude Files="$(var.PublishDir)GuardianAngel.Service.exe" />
+        <Exclude Files="$(var.PublishDir)GuardianAngel.Watchdog.exe" />
+        <Exclude Files="$(var.PublishDir)GuardianAngel.App.exe" />
+        <Exclude Files="$(var.PublishDir)**\*.pdb" />
+      </Files>
+
+      <Component Id="MainService">
+        <File Id="ServiceExe" Source="$(var.PublishDir)GuardianAngel.Service.exe" KeyPath="yes" />
+        <ServiceInstall Id="MainServiceInstall" Name="GuardianAngel" DisplayName="Guardian Angel"
+                        Description="Keeps your PC locked to the DNS filter you chose."
+                        Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem" Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="0" ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Id="MainServiceControl" Name="GuardianAngel" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      </Component>
+
+      <Component Id="WatchdogService">
+        <File Id="WatchdogExe" Source="$(var.PublishDir)GuardianAngel.Watchdog.exe" KeyPath="yes" />
+        <ServiceInstall Id="WatchdogInstall" Name="GuardianAngelWatchdog" DisplayName="Guardian Angel Watchdog"
+                        Description="Keeps the Guardian Angel service running."
+                        Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem" Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="0" ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Id="WatchdogControl" Name="GuardianAngelWatchdog" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      </Component>
+
+      <Component Id="AppExe">
+        <File Id="AppExeFile" Source="$(var.PublishDir)GuardianAngel.App.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="ArpEntry">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\GuardianAngel">
+          <RegistryValue Name="DisplayName" Type="string" Value="Guardian Angel" KeyPath="yes" />
+          <RegistryValue Name="DisplayVersion" Type="string" Value="$(var.ProductVersion)" />
+          <RegistryValue Name="Publisher" Type="string" Value="Guardian Angel Project" />
+          <RegistryValue Name="DisplayIcon" Type="string" Value="[INSTALLFOLDER]GuardianAngel.App.exe" />
+          <RegistryValue Name="InstallLocation" Type="string" Value="[INSTALLFOLDER]" />
+          <RegistryValue Name="UninstallString" Type="string" Value="&quot;[INSTALLFOLDER]GuardianAngel.App.exe&quot; --uninstall" />
+          <RegistryValue Name="NoModify" Type="integer" Value="1" />
+          <RegistryValue Name="NoRepair" Type="integer" Value="1" />
+          <RegistryValue Name="URLInfoAbout" Type="string" Value="https://github.com/TemplarXP/Guardian-Angel" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="AppShortcut" Name="Guardian Angel" Description="Guardian Angel" Target="[INSTALLFOLDER]GuardianAngel.App.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\GuardianAngel\Installer" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="Guardian Angel" Level="1">
+      <ComponentGroupRef Id="ProgramFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>
